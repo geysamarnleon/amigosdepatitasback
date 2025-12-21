@@ -1,65 +1,107 @@
+/************************************************
+ * CARGA DE VARIABLES DE ENTORNO
+ ************************************************/
 require("dotenv").config();
-console.log("CLOUDINARY_CLOUD_NAME desde index:", process.env.CLOUDINARY_CLOUD_NAME);
+
+/************************************************
+ * VARIABLES DE ENTORNO (UNA SOLA VEZ)
+ ************************************************/
+const ONE_SIGNAL_API_KEY = process.env.ONESIGNAL_API_KEY;
+const ONE_SIGNAL_APP_ID = process.env.ONESIGNAL_APP_ID;
+const CLOUDINARY_CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME;
+const PORT = process.env.PORT || 3000;
+
+console.log(
+  "✅ CLOUDINARY_CLOUD_NAME cargado:",
+  CLOUDINARY_CLOUD_NAME ? "OK" : "NO DEFINIDO"
+);
+
+/************************************************
+ * IMPORTACIONES
+ ************************************************/
 const express = require("express");
 const axios = require("axios");
-const uploadRoute = require("./routes/upload"); // 👈 Ruta de subida de imágenes
+const uploadRoute = require("./routes/upload");
 
+/************************************************
+ * CONFIGURACIÓN DE EXPRESS
+ ************************************************/
 const app = express();
 app.use(express.json());
 
-/**
- * ✅ Ruta para enviar notificaciones con deep link
- */
+/************************************************
+ * RUTA: ENVIAR NOTIFICACIÓN (OneSignal + Deep Link)
+ ************************************************/
 app.post("/send-notification", async (req, res) => {
-  const { playerId, title, message, chatId, receiverId, receiverName, receiverPlayerId } = req.body;
+  const {
+    playerId,
+    title,
+    message,
+    chatId,
+    receiverId,
+    receiverName,
+    receiverPlayerId,
+  } = req.body;
 
   if (!playerId || !title || !message) {
-    return res.status(400).json({ error: "Faltan parámetros" });
+    return res.status(400).json({ error: "Faltan parámetros obligatorios" });
   }
 
   try {
     const response = await axios.post(
       "https://onesignal.com/api/v1/notifications",
       {
-        app_id: process.env.ONESIGNAL_APP_ID,
+        app_id: ONE_SIGNAL_APP_ID,
         include_player_ids: [playerId],
         headings: { en: title },
         contents: { en: message },
-        data: { 
+        data: {
           chatId,
           receiverId,
           receiverName,
           receiverPlayerId,
-          deep_link: `myapp://chat/${chatId}/${receiverId}/${encodeURIComponent(receiverName)}/${receiverPlayerId}`
-        }
+          deep_link: `myapp://chat/${chatId}/${receiverId}/${encodeURIComponent(
+            receiverName
+          )}/${receiverPlayerId}`,
+        },
       },
       {
         headers: {
-          Authorization: `Basic ${process.env.ONESIGNAL_API_KEY}`,
+          Authorization: `Basic ${ONE_SIGNAL_API_KEY}`,
           "Content-Type": "application/json",
         },
       }
     );
 
-    res.json({ success: true, response: response.data });
+    res.json({
+      success: true,
+      oneSignalResponse: response.data,
+    });
   } catch (error) {
     console.error(
-      "Error enviando notificación:",
+      "❌ Error enviando notificación:",
       error.response?.data || error.message
     );
     res.status(500).json({ error: "Error enviando notificación" });
   }
 });
 
-/**
- * ✅ Ruta para subida de imágenes
- */
+/************************************************
+ * RUTA: SUBIDA DE IMÁGENES (Cloudinary)
+ ************************************************/
 app.use("/upload-image", uploadRoute);
 console.log("✅ Ruta /upload-image cargada correctamente");
 
-// Ruta raíz
-app.get("/", (req, res) => res.send("Hello Render!"));
+/************************************************
+ * RUTA RAÍZ
+ ************************************************/
+app.get("/", (req, res) => {
+  res.send("🐾 Amigos de Patitas Backend funcionando");
+});
 
-// Iniciar servidor
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
+/************************************************
+ * INICIAR SERVIDOR
+ ************************************************/
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+});
