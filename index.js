@@ -4,15 +4,17 @@
 require("dotenv").config();
 
 /************************************************
- * VARIABLES DE ENTORNO (UNA SOLA VEZ)
+ * VARIABLES DE ENTORNO
  ************************************************/
 const ONE_SIGNAL_API_KEY = process.env.ONESIGNAL_API_KEY;
 const ONE_SIGNAL_APP_ID = process.env.ONESIGNAL_APP_ID;
 const CLOUDINARY_CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME;
 const PORT = process.env.PORT || 3000;
 
+console.log("ONESIGNAL_APP_ID:", ONE_SIGNAL_APP_ID ? "OK" : "NO DEFINIDO");
+console.log("ONESIGNAL_API_KEY:", ONE_SIGNAL_API_KEY ? "OK" : "NO DEFINIDO");
 console.log(
-  "✅ CLOUDINARY_CLOUD_NAME cargado:",
+  "CLOUDINARY_CLOUD_NAME:",
   CLOUDINARY_CLOUD_NAME ? "OK" : "NO DEFINIDO"
 );
 
@@ -30,7 +32,7 @@ const app = express();
 app.use(express.json());
 
 /************************************************
- * RUTA: ENVIAR NOTIFICACIÓN (OneSignal + Deep Link)
+ * RUTA: ENVIAR NOTIFICACIÓN (OneSignal v1 + Deep Link)
  ************************************************/
 app.post("/send-notification", async (req, res) => {
   const {
@@ -44,7 +46,9 @@ app.post("/send-notification", async (req, res) => {
   } = req.body;
 
   if (!playerId || !title || !message) {
-    return res.status(400).json({ error: "Faltan parámetros obligatorios" });
+    return res
+      .status(400)
+      .json({ error: "Faltan parámetros obligatorios" });
   }
 
   try {
